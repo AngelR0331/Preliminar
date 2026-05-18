@@ -1,0 +1,249 @@
+---
+title: "Trabajo final"
+author: 
+        - "Romero Vázquez Ángel Eladio"
+        - " Solano Tavera Andrea"
+format: pdf
+editor: visual
+---
+
+## Introducción
+
+En este trabajo se analizará la situación demográfica del estado de Campeche, con el objetivo de identificar algunas características de su población y comprender su dinámica a lo largo del tiempo. Se estudiarán aspectos como el crecimiento poblacional, la distribución por edad y sexo, la densidad demográfica y algunos indicadores relacionados con la mortalidad. A partir de estos elementos, se busca reconocer cómo la estructura de la población puede influir en el comportamiento demográfico de la entidad.
+Campeche es una entidad ubicada en el sureste de México y forma parte de la península de Yucatán. De acuerdo con el Censo de Población y Vivienda 2020, el estado registró una población de 928,363 habitantes. Además, presenta una baja densidad de población, con aproximadamente 16 habitantes por kilómetro cuadrado, cifra menor al promedio nacional de 64 habitantes por kilómetro cuadrado en 2020. Esta baja concentración poblacional puede estar relacionada con la distribución territorial de los servicios de salud, la movilidad de la población y las diferencias entre zonas urbanas y rurales.
+Estas características son importantes para interpretar la mortalidad, ya que el riesgo de morir no depende únicamente del número total de habitantes, sino también de la edad, el sexo, las condiciones de vida y el acceso a servicios básicos y de salud. 
+Por ello, el análisis de Campeche permitirá observar cómo se comportan distintos indicadores demográficos y cómo estos ayudan a explicar la mortalidad en la entidad. En particular, se considerarán elementos como la estructura por edad, la distribución por sexo, el crecimiento poblacional y la densidad demográfica, ya que estos factores sirven como base para interpretar posteriormente las tasas de mortalidad y sus posibles diferencias dentro del estado.
+
+### Lectura del primer objeto en la web
+
+Lectura de la tabla de poblacion a mitad de año de las estimaciones-proyecciones de pobacion de México.
+
+```{r}
+# 1. Remover los objetos
+# rm(list = ls())
+
+# 2. Instalar paquetes, correr la instalación en la consola 
+ #options(repos = c(CRAN = "https://cloud.r-project.org"))
+ #install.packages("data.table",  dependencies = TRUE)
+ #install.packages("dplyr",       dependencies = TRUE)
+ #install.packages("ggplot2",     dependencies = TRUE)
+ #install.packages("tidyr",       dependencies =TRUE)
+install.pack
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+
+
+
+# 3. Descargar tablas de datos
+pop <- fread("https://repodatos.atdt.gob.mx/CONAPO/proyecciones/00_Pob_Mitad_1950_2070.csv")
+
+# 4. Exploración de la tabla de población
+table(pop$ENTIDAD)
+table(pop$CVE_GEO)
+table(pop$ANIO)
+
+names(pop)
+sum(pop$POBLACION)
+
+```
+
+### Pirámide poblacional de "Campeche" para 2026, 2050 y 2070.
+
+La pirámide poblacional de Campeche para el año 2026 muestra una estructura que todavía conserva rasgos de una población relativamente joven. La base de la pirámide, correspondiente a los grupos de edad infantil y adolescente, aún mantiene un tamaño importante, pero no es tan amplia como en una población de alto crecimiento. Esto sugiere que la fecundidad ha comenzado a disminuir y que las generaciones más recientes son proporcionalmente menores que las generaciones jóvenes y adultas.
+En 2026 destaca un ensanchamiento en los grupos de edad adulta, principalmente entre los 20 y 40 años, lo cual indica una concentración importante de población en edades productivas. Todavía cuenta con una proporción considerable de población económicamente activa. Sin embargo, también se observa un aumento gradual en los grupos de edades mayores, especialmente a partir de los 60 años, lo que refleja el inicio de un proceso de envejecimiento demográfico. Para 2050, la estructura cambia de forma más clara. La base de la pirámide se vuelve más estrecha, lo que refleja una menor proporción de población joven, mientras que los grupos de edad adulta y adulta mayor aumentan su participación. Esto indica una reducción de la natalidad y un avance del proceso de envejecimiento demográfico.
+Hacia 2070, la pirámide poblacional de Campeche muestra una población mucho más envejecida. La mayor parte del volumen poblacional se concentra en edades medias y avanzadas, especialmente alrededor de los 60 años y más. Esto significa que el estado tendrá una menor proporción de jóvenes y una mayor presencia de adultos mayores.
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Filtramos Campeche para los años 2026, 2050 y 2070
+cpe <- pop %>%
+  filter(
+    ENTIDAD == "Campeche",
+    ANIO %in% c(2026, 2050, 2070)
+  ) %>%
+  select(ANIO, SEXO, EDAD, POBLACION)
+
+# Si no te aparece la gráfica o sale vacía, cambia la parte de arriba por esta:
+# cpe <- pop %>%
+#   filter(
+#     ENTIDAD == "Campeche",
+#     ANIO %in% c("2026", "2050", "2070")
+#   ) %>%
+#   select(ANIO, SEXO, EDAD, POBLACION)
+
+# Hombres a la izquierda y mujeres a la derecha
+cpe <- cpe %>%
+  mutate(
+    Poblacion_Grafico = ifelse(SEXO == "Hombres", -POBLACION, POBLACION),
+    ANIO = as.factor(ANIO)
+  )
+
+# Gráfica con las tres pirámides
+ggplot(cpe, aes(x = EDAD, y = Poblacion_Grafico, fill = SEXO)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ ANIO, nrow = 1) +
+  scale_y_continuous(labels = abs) +
+  scale_fill_manual(values = c("Hombres" = "#3498db", "Mujeres" = "#e74c3c")) +
+  labs(
+    title = "Pirámides poblacionales de Campeche",
+    subtitle = "Comparación entre 2026, 2050 y 2070",
+    x = "Edad",
+    y = "Población",
+    fill = "Sexo",
+    caption = "Fuente: Elaboración propia con datos poblacionales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+### Pirámide poblacional de "Campeche" para 2010, 2019 y 2021.
+Como podemos observar la población comienza a rectagulizarse entre las edades 10 y 30, teniendo una cantidad de menores de 5 años menor a en general y en comparación a hace 10 años, las edades 40 en adelante la población parece mantenerse parecida
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Filtramos Campeche para los años 2010, 2019 y 2021
+cpe <- pop %>%
+  filter(
+    ENTIDAD == "Campeche",
+    ANIO %in% c(2010, 2019, 2021)
+  ) %>%
+  select(ANIO, SEXO, EDAD, POBLACION)
+
+# Si no te aparece la gráfica o sale vacía, cambia la parte de arriba por esta:
+# cpe <- pop %>%
+#   filter(
+#     ENTIDAD == "Campeche",
+#     ANIO %in% c("2010", "2019", "2021")
+#   ) %>%
+#   select(ANIO, SEXO, EDAD, POBLACION)
+
+# Hombres a la izquierda y mujeres a la derecha
+cpe <- cpe %>%
+  mutate(
+    Poblacion_Grafico = ifelse(SEXO == "Hombres", -POBLACION, POBLACION),
+    ANIO = as.factor(ANIO)
+  )
+
+# Gráfica con las tres pirámides
+ggplot(cpe, aes(x = EDAD, y = Poblacion_Grafico, fill = SEXO)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ ANIO, nrow = 1) +
+  scale_y_continuous(labels = abs) +
+  scale_fill_manual(values = c("Hombres" = "#3498db", "Mujeres" = "#e74c3c")) +
+  labs(
+    title = "Pirámides poblacionales de Campeche",
+    subtitle = "Comparación entre 2010, 2019 y 2021",
+    x = "Edad",
+    y = "Población",
+    fill = "Sexo",
+    caption = "Fuente: Elaboración propia con datos poblacionales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    strip.text = element_text(face = "bold")
+  )
+```
+
+###FUNCIONES
+
+ Media ponderada
+
+```{r}
+weight_mean <- function(x,
+                          w=rep(1/length(x),
+                        length(x))){
+  
+  x_mean <- sum(x*w)/sum(w)
+  return(x_mean)  
+}
+
+#Ejemplo
+weight_mean(c(10,40),c(.3,.7))  #con pesos
+weight_mean(c(10,40))           #sin pesos
+
+```
+Crecimiento exponencial
+```{r}
+  
+library("lubridate")
+  expo <- function(N_0, N_T, t_0, t_T, t){ 
+  
+  dt <- decimal_date(as.Date(t_T)) - decimal_date(as.Date(t_0)) 
+  
+  r <- log(N_T/N_0)/dt 
+  
+  h <- t - decimal_date(as.Date(t_0)) 
+  
+  N_h <- N_0 * exp(r*h) 
+  
+  return(N_h) } 
+
+
+
+
+cre_exp <- expo( N_0=112336538, N_T=126014024, 
+                 t_0="2010-06-25", t_T="2020-03-15",
+                 t=seq(2020.5, 2100.5, 1)
+                 ) 
+
+
+# Gráfica 
+data.frame(Año = c(decimal_date(as.Date("2010-06-25")), 
+                   decimal_date(as.Date("2020-03-15")), 
+                   seq(2020.5, 2100.5, 1)), 
+                   N_t = c(112336538, 126014024, cre_exp)) %>% 
+  
+  ggplot(aes(Año, N_t)) + 
+  geom_line() + 
+  geom_point()
+
+
+
+
+```
+
+###Lectura de tabla del mismo proyecto
+
+```{r}
+library("knitr")
+(deaths <- fread("data/Mx_ARG_GUA.csv"))
+kable(deaths, caption = "Muertues  de Argentina y Guatemala")
+```
+
+##Tasas brutas y específicas
+
+```{r}
+deaths <- deaths %>%
+          mutate(m_x = D/N)
+
+plot(deaths[location     == "Argentina",x], #Eje x
+     log(deaths[location == "Argentina", m_x])) #Eje y
+#Tasa bruta de mortalidad 
+
+deaths %>%
+  group_by(location) %>% 
+  summarise(weight_mean(m_x,x/sum(x)))
+
+
+
+```
+
+```{r}
+
+
+
+```
