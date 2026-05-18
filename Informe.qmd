@@ -13,7 +13,7 @@ Otro aspecto importante es el cambio en la estructura por edad. En 2010, Campech
 Además, el año 2021 debe interpretarse con cuidado, ya que la mortalidad estuvo influida por la pandemia por COVID-19. Por ello, al comparar 2019 con 2021, se puede observar no solo el comportamiento habitual de la mortalidad, sino también el efecto de un evento sanitario extraordinario.
 En conjunto, estos elementos permiten contextualizar los resultados del análisis, considerando que la mortalidad en Campeche puede estar relacionada tanto con su estructura poblacional como con factores territoriales y de acceso a servicios de salud. En particular, se considerarán elementos como la estructura por edad, la distribución por sexo, el crecimiento poblacional y la densidad demográfica, ya que estos factores sirven como base para interpretar posteriormente las tasas de mortalidad y sus posibles diferencias dentro del estado.
 ##Librerias y carga de data
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
 library(data.table)
 library(dplyr)
@@ -27,6 +27,7 @@ pop <- fread("https://repodatos.atdt.gob.mx/CONAPO/proyecciones/00_Pob_Mitad_195
 #obtenemos la información de la mortalidad observada con los datos reportados por la INEGI
 #En el siguiente análisis no se consideraron los no especificados ni las defunciones registradas fuera del año de ocurrencia, esto debido a que representaban una proporción muy pequeña.
 #poner la ruta del archivo
+
 setwd("C:/Users/angel/OneDrive/Escritorio/2026-2/Demografia/Nueva carpeta/Entrega 1/Data")
 
 #consultamos llos archivos de la ruta
@@ -37,7 +38,7 @@ dir()
 ```
 
 ###creación de una primer tabla de mortalidad
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
 #creamos un nuevo data frame con el formato que deseamos para obtener las poblaciones iniciales
 cpe_ancho <- pop %>%
@@ -65,11 +66,14 @@ cpe_ancho <- pop %>%
 
 
 #guardamos el archivo de nuestro directorio
+
+setwd("C:/Users/angel/OneDrive/Escritorio/2026-2/Demografia/Nueva carpeta/Entrega 1/Data")
+
 lt <- fread("mortalidad_2010_2019_2021.csv")
 #corregimos el error al contruir el csv
 lt <- lt[,-5][,-5][,-5]
 
-
+dir()
 names(lt)
 #cambiar nombres y ordenar si es necesario
 
@@ -91,7 +95,7 @@ lt1 <- fread("Mortaliad_y_proyección.csv")
 ```
 
 ###Completamos calculando los datos restantes
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
 #calculamos la q_x
 lt1[ , q_x := Dx/lx]
@@ -159,14 +163,15 @@ lt1[, ex := Tx / lx, by = AÑO]
 lt1[, ex_h := HTx / Hlx, by = AÑO]
 #mujeres
 lt1[, ex_m := MTx / Mlx, by = AÑO]
+lt1
 
 #cuadro con las esperanzas de vida
 cuadro_e0 <- lt1[x == 0, .(AÑO, ex_h, ex_m)]
-
+cuadro_e0
 ```
 
 ###Gráficas
-```{r}
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
 lt1[, AÑO := as.factor(AÑO)] # Nos asegura colores fijos por año
 
@@ -178,9 +183,9 @@ gHlx <- ggplot(lt1, aes(x = x, y = Hlx, color = AÑO)) +
        subtitle = "Muestra cuántos siguen vivos de la cohorte inicial",
        x = "Edad", y = "Número de personas vivas", color = "Año") +
   theme_minimal()
+gHlx
 
-
-ggsave("grafica_lx_hombres.png", plot = g_sobrevivientes_h, width = 7, height = 4.5, dpi = 300)
+ggsave("grafica_lx_hombres.png", plot = gHlx, width = 7, height = 4.5, dpi = 300)
 
 gMlx <- ggplot(lt1, aes(x = x, y = Mlx, color = AÑO)) +
   geom_line(linewidth = 1.2) +
@@ -188,8 +193,8 @@ gMlx <- ggplot(lt1, aes(x = x, y = Mlx, color = AÑO)) +
        subtitle = "Muestra cuántos siguen vivos de la cohorte inicial",
        x = "Edad", y = "Número de personas vivas", color = "Año") +
   theme_minimal()
-
-ggsave("grafica_lx_Mujeres.png", plot = g_sobrevivientes_h, width = 7, height = 4.5, dpi = 300)
+gMlx
+ggsave("grafica_lx_Mujeres.png", plot = gMlx, width = 7, height = 4.5, dpi = 300)
 
 
 #grafica de probabilidad de morir de hombre
@@ -197,20 +202,26 @@ gqx_h <- ggplot(lt1, aes(x = x, y = log(qx_h), color = AÑO)) +
   geom_line(linewidth = 1.2) +
   labs(title = "Probabilidad de morir de hombres por Año",
        subtitle = "escala logarítmica",
-       x = "Edad", y = "Número de personas vivas", color = "Año") +
+       x = "Edad", y = "qx_h", color = "Año") +
   theme_minimal()
-
-ggsave("grafica_qx_h.png", plot = g_sobrevivientes_h, width = 7, height = 4.5, dpi = 300)
+gqx_h
+ggsave("grafica_qx_h.png", plot = gqx_h, width = 7, height = 4.5, dpi = 300)
 
 
 #grafica de probabilidad de morir de mujeres
-gqx_h <- ggplot(lt1, aes(x = x, y = log(qx_m), color = AÑO)) +
+gqx_m <- ggplot(lt1, aes(x = x, y = log(qx_m), color = AÑO)) +
   geom_line(linewidth = 1.2) +
   labs(title = "Probabilidad de morir de mujeres por Año",
        subtitle = "escala logarítmica",
-       x = "Edad", y = "Número de personas vivas", color = "Año") +
+       x = "Edad", y = "qx_m", color = "Año") +
   theme_minimal()
-
-ggsave("grafica_qx_m.png", plot = g_sobrevivientes_h, width = 7, height = 4.5, dpi = 300)
+gqx_m
+ggsave("grafica_qx_m.png", plot = gqx_m, width = 7, height = 4.5, dpi = 300)
 
 ```
+
+#Análisis
+
+Al comparar los años 2010, 2019 y 2021 se puede observar cómo cambió la mortalidad en Campeche antes y durante la pandemia. El año 2010 sirve como un punto de partida, mientras que 2019 permite ver la situación antes de la COVID-19. Por otro lado, 2021 es importante porque refleja el impacto que tuvo la pandemia en la mortalidad. En general, si entre 2010 y 2019 la esperanza de vida aumenta, esto puede interpretarse como una mejora en las condiciones de supervivencia de la población. Es decir, la población de Campeche habría tenido mejores condiciones de salud o menor riesgo de morir en ciertos grupos de edad. Sin embargo, al llegar a 2021, este comportamiento puede cambiar debido al aumento de defunciones provocado por la COVID-19. Una de las partes más importantes del análisis es comparar 2019 con 2021, porque 2019 representa un año “normal” antes de la pandemia, mientras que 2021 muestra un año afectado por un evento sanitario fuerte. Si en 2021 aumenta la probabilidad de morir qx, o disminuye la esperanza de vida e x, se puede decir que la pandemia tuvo un efecto importante en la mortalidad del estado.
+También hay que considerar algunas características de Campeche. Es un estado con población relativamente pequeña y con baja densidad poblacional, por lo que algunas personas pueden vivir lejos de los principales servicios de salud. Esto puede influir en la atención médica y en el comportamiento de la mortalidad. Además, Campeche ha tenido un proceso de envejecimiento gradual, lo cual también puede aumentar la mortalidad, ya que las personas adultas mayores tienen mayor riesgo de morir.
+Por sexo, normalmente las mujeres tienen mayor esperanza de vida que los hombres. Entonces, si en los resultados se observa que e x, de las mujeres es mayor que el de los hombres, esto coincide con el comportamiento esperado. En cambio, si en 2021 la esperanza de vida de los hombres baja más, podría interpretarse como una mayor afectación masculina durante la pandemia.        En conclusión, los resultados muestran que la mortalidad en Campeche no debe analizarse solo con los indicadores y datos, sino también tomando en cuenta el contexto. Entre 2010 y 2019 se puede observar la evolución normal de la mortalidad, pero en 2021 aparece el efecto de la COVID-19. Por eso, los cambios más importantes de ese año pueden estar relacionados con la pandemia, el envejecimiento de la población y las condiciones particulares del estado
