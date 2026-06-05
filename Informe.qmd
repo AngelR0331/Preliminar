@@ -4,19 +4,28 @@ author:
         - "Romero Vázquez Ángel Eladio"
         - " Solano Tavera Andrea"
 format: pdf
-editor: visual
+execute:
+  echo: false      
+  warning: false   
+  message: false   
 ---
 
-###Introducción En este trabajo se analiza el comportamiento de la mortalidad en el estado de Campeche durante los años 2010, 2019 y 2021. Estos años permiten comparar tres momentos importantes: 2010 como punto inicial de referencia censal, 2019 como año previo a la pandemia por COVID-19 y 2021 como un año afectado por sus efectos en la mortalidad. Campeche es una entidad ubicada en el sureste de México, dentro de la península de Yucatán. Se caracteriza por tener una población relativamente pequeña y una baja densidad poblacional, lo que puede influir en la distribución de los servicios de salud y en el acceso oportuno a la atención médica. En 2010, el estado tenía 822,441 habitantes, mientras que para 2020 alcanzó 928,363 habitantes, lo que muestra un crecimiento moderado de la población. Otro aspecto importante es el cambio en la estructura por edad. En 2010, Campeche tenía una edad mediana de 25 años, mientras que en 2020 aumentó a 29 años, lo cual indica un avance gradual hacia el envejecimiento demográfico. Este dato es relevante porque una población con mayor proporción de adultos mayores tiende a presentar niveles más altos de mortalidad. Además, el año 2021 debe interpretarse con cuidado, ya que la mortalidad estuvo influida por la pandemia por COVID-19. Por ello, al comparar 2019 con 2021, se puede observar no solo el comportamiento habitual de la mortalidad, sino también el efecto de un evento sanitario extraordinario. En conjunto, estos elementos permiten contextualizar los resultados del análisis, considerando que la mortalidad en Campeche puede estar relacionada tanto con su estructura poblacional como con factores territoriales y de acceso a servicios de salud. En particular, se considerarán elementos como la estructura por edad, la distribución por sexo, el crecimiento poblacional y la densidad demográfica, ya que estos factores sirven como base para interpretar posteriormente las tasas de mortalidad y sus posibles diferencias dentro del estado. ##Librerias y carga de data
+# Diagrama de flujo para construcción de las tablas de vida
+
+![Diagrama de la construcción de las tablas de vida](Data/Diagrama%20de%20flujo.png)\
+
+# Introducción
+
+En este trabajo se analiza el comportamiento de la mortalidad en el estado de Campeche durante los años 2010, 2019 y 2021. Estos años permiten comparar tres momentos importantes: 2010 como punto inicial de referencia censal, 2019 como año previo a la pandemia por COVID-19 y 2021 como un año afectado por sus efectos en la mortalidad. Campeche es una entidad ubicada en el sureste de México, dentro de la península de Yucatán. Se caracteriza por tener una población relativamente pequeña y una baja densidad poblacional, lo que puede influir en la distribución de los servicios de salud y en el acceso oportuno a la atención médica. En 2010, el estado tenía 822,441 habitantes, mientras que para 2020 alcanzó 928,363 habitantes, lo que muestra un crecimiento moderado de la población. Otro aspecto importante es el cambio en la estructura por edad. En 2010, Campeche tenía una edad mediana de 25 años, mientras que en 2020 aumentó a 29 años, lo cual indica un avance gradual hacia el envejecimiento demográfico. Este dato es relevante porque una población con mayor proporción de adultos mayores tiende a presentar niveles más altos de mortalidad. Además, el año 2021 debe interpretarse con cuidado, ya que la mortalidad estuvo influida por la pandemia por COVID-19. Por ello, al comparar 2019 con 2021, se puede observar no solo el comportamiento habitual de la mortalidad, sino también el efecto de un evento sanitario extraordinario. En conjunto, estos elementos permiten contextualizar los resultados del análisis, considerando que la mortalidad en Campeche puede estar relacionada tanto con su estructura poblacional como con factores territoriales y de acceso a servicios de salud. En particular, se considerarán elementos como la estructura por edad, la distribución por sexo, el crecimiento poblacional y la densidad demográfica, ya que estos factores sirven como base para interpretar posteriormente las tasas de mortalidad y sus posibles diferencias dentro del estado.
 
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
-
+#| results: 'hide'
 library(data.table)
 library(dplyr)
 library(tidyr) 
 library(ggplot2)
 library(knitr)
-library(kableExtra)
+
 #cargamos la información de la proyección a mitad de año de 1950 a 2070
 pop <- fread("https://repodatos.atdt.gob.mx/CONAPO/proyecciones/00_Pob_Mitad_1950_2070.csv")
 
@@ -27,14 +36,63 @@ pop <- fread("https://repodatos.atdt.gob.mx/CONAPO/proyecciones/00_Pob_Mitad_195
 
 setwd("C:/Users/angel/OneDrive/Escritorio/2026-2/Demografia/Nueva carpeta/Entrega 1/Data")
 
-#consultamos llos archivos de la ruta
-dir()
 
 
 
 ```
 
-### Creación de una primer tabla de mortalidad
+# Pirámides poblacionales de Campeche de 2010 y 2019
+
+Al comparar las pirámides poblacionales del estado con casi 10 años de diferencia, podemos comenzar a obervar el proceso de envejecimiento al cual todo el pais se ha esperado enfrentar
+
+```{r}
+
+# Filtramos Campeche para los años 2026, 2050 y 2070
+cpe <- pop %>%
+  filter(
+    ENTIDAD == "Campeche",
+    ANIO %in% c(2010, 2019)
+  ) %>%
+  select(ANIO, SEXO, EDAD, POBLACION)
+
+# Si no te aparece la gráfica o sale vacía, cambia la parte de arriba por esta:
+# cpe <- pop %>%
+#   filter(
+#     ENTIDAD == "Campeche",
+#     ANIO %in% c("2026", "2050", "2070")
+#   ) %>%
+#   select(ANIO, SEXO, EDAD, POBLACION)
+
+# Hombres a la izquierda y mujeres a la derecha
+cpe <- cpe %>%
+  mutate(
+    Poblacion_Grafico = ifelse(SEXO == "Hombres", -POBLACION, POBLACION),
+    ANIO = as.factor(ANIO)
+  )
+
+# Gráfica con las tres pirámides
+ggplot(cpe, aes(x = EDAD, y = Poblacion_Grafico, fill = SEXO)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  facet_wrap(~ ANIO, nrow = 1) +
+  scale_y_continuous(labels = abs) +
+  scale_fill_manual(values = c("Hombres" = "#3498db", "Mujeres" = "#e74c3c")) +
+  labs(
+    title = "Pirámides poblacionales de Campeche",
+    subtitle = "Comparación entre 2010 y 2019",
+    x = "Edad",
+    y = "Población",
+    fill = "Sexo",
+    caption = "Fuente: Elaboración propia con datos poblacionales"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    strip.text = element_text(face = "bold")
+  )
+
+
+```
 
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
@@ -72,7 +130,7 @@ lt <- fread("mortalidad_2010_2019_2021.csv")
 lt <- lt[,-5][,-5][,-5]
 
 dir()
-names(lt)
+
 #cambiar nombres y ordenar si es necesario
 
 #Cambieamos los nombres a una forma estandar
@@ -87,11 +145,99 @@ names(lt)
 
 #con la información de las defunciones, ademas de la informacíon de los nacidos proyectados en 2010, 2019 y 20221
 
-#de las tablas anreriores contruimos a manos la sigueinte tabla
+#d0e las tablas anreriores contruimos a manos la sigueinte tabla
 lt1 <- fread("Mortaliad_y_proyección.csv")
 
 
 ```
+
+# Formulas utilizadas
+
+------------------------------------------------------------------------
+
+## Tasa central de mortalidad
+
+La tasa central de mortalidad se define como:
+
+$$
+m_x = \frac{D_x}{N_x}
+$$
+
+donde: - $D_x$ representa el número de defunciones observadas en el grupo de edad $x$, - $N_x$ es la población expuesta al riesgo en dicho grupo.
+
+## Probabilidad de morir
+
+La probabilidad de morir entre las edades $x$ y $x+n$ se calcula como:
+
+$$
+q_x = \frac{n \cdot m_x}{1 + (n - a_x) \cdot m_x}
+$$
+
+donde: - $n$ es la amplitud del intervalo de edad, - $a_x$ es la fracción promedio del intervalo vivido por quienes fallecen \## Probabilidad de sobrevivir
+
+La probabilidad de sobrevivir se define como:
+
+$$
+p_x = 1 - q_x
+$$
+
+## Función de sobrevivientes
+
+El número de sobrevivientes a la edad $x+n$ se obtiene mediante:
+
+$$
+l_{x+n} = l_x \cdot p_x = l_x (1 - q_x)
+$$
+
+donde $l_0 = 10^k$ radix de la cohorte hipotética, - $k$ algún entero.
+
+## Defunciones en la tabla de vida
+
+El número de defunciones en el intervalo se calcula como:
+
+$$
+d_x = l_x - l_{x+n}
+$$
+
+## Años persona vividos en el intervalo
+
+El número de años persona vividos entre $x$ y $x+n$ se estima como:
+
+$$
+L_x = n \cdot l_{x+n} + a_x \cdot d_x
+$$
+
+## Suma de los años persona vividos
+
+El total de años persona vividos que acomulan los supervivientes desde $x$ a $w^+$ se define como:
+
+$$
+T_x = \sum_{y \geq x} L_y
+$$
+
+## Esperanza de vida
+
+La esperanza de vida a la edad $x$:
+
+$$
+e_x = \frac{T_x}{l_x}
+$$
+
+La esperanza de vida alnacer:
+
+$$
+e_0 = \frac{T_0}{l_0}
+$$
+
+## Crecimiento exponencial
+
+Para el modelo de crecimeinto usado en este trabjo, se eligió el modelo de crecimiento exponencial:
+
+$$
+P(t) = P_0 e^{rt}
+$$
+
+donde: - $P(t)$ es la población en el tiempo $t$, - $P_0$ es la población inicial, - $r$ es la tasa de crecimiento
 
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
@@ -108,7 +254,7 @@ lt1[ , p_x := 1-q_x]
 
 lt1[, px_h := 1-qx_h]
 
-lt1[, px_h := 1-qx_m] 
+lt1[, px_m := 1-qx_m] 
 
 
 
@@ -167,40 +313,217 @@ lt1 <- lt1 %>%
 
 ```
 
-### Obtenemos las tablas de vida de cada año
+# Obtenemos las tablas de vida de cada año
 
-# Tabla de vida obtenida con los datos de 2010
+## Tabla de vida obtenida con los datos de 2010
+
+## Tabla de vida 2010 total
 
 ```{r}
 
-#Tabla de vida 2010
-lt2010 <- lt1 %>%
+#Tabla de vida 2010 total
+lt2010_t <- lt1 %>%
   filter(AÑO == 2010) %>%
-    select(-AÑO)
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, Dx, lx, q_x, p_x, ax_gen, Lx, Tx, ex) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    q_x  = round(q_x, digits = 4),
+    p_x  = round(p_x, digits = 4),
+    ax_m = round(ax_gen, digits = 4),
+    ex   = round(ex, digits = 2)
+  )
 
+# Mostrar el resultado limpio
+kable(lt2010_t, 
+      caption = "Tabla de vida 2010 total", 
+      align = "c")
 ```
 
-#Tabla de vida obtenido con los datos de 2019
+## Tabla de vida 2010 mujer
 
 ```{r}
-#Tabla de vida 2019
-lt2019 <- lt1 %>%
-  filter(AÑO == 2019) %>%
-    select(-AÑO)
-kable(lt2019, 
-      caption = "Tabla de vida 2019", 
+lt2010_m <- lt1 %>%
+  filter(AÑO == 2010) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, MDx, Mlx, qx_m, px_m, ax_m, MLx, MTx, ex_m) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    qx_m  = round(qx_m, digits = 4),
+    px_m  = round(px_m, digits = 4),
+    ax_m = round(ax_m, digits = 4),
+    ex_m   = round(ex_m, digits = 2)
+  )
+
+# Mostrar el resultado limpio
+
+# Mostrar el resultado limpio
+kable(lt2010_m, 
+      caption = "Tabla de vida 2010 mujeres", 
       align = "c")
 
 ```
 
-#Tabla de vida obtenido con los datos de 2021
+## Tabla de vida 2010 hombre
 
 ```{r}
-#Tabla de vida 2021
-lt2021 <- lt1 %>%
-  filter(AÑO == 2021) %>%
-    select(-AÑO)
+#Tabla de vida 2010 hombre
+lt2010_h <- lt1 %>%
+  filter(AÑO == 2010) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, HDx, Hlx, qx_h, px_h, ax_h, HLx, HTx, ex_h) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    qx_h  = round(qx_h, digits = 4),
+    px_h  = round(px_h, digits = 4),
+    ax_h  = round(ax_h, digits = 4),
+    ex_h  = round(ex_h, digits = 2)
+  )
 
+# Mostrar el resultado limpio
+kable(lt2010_h, 
+      caption = "Tabla de vida 2010 hombres", 
+      align = "c")
+
+
+```
+
+## Tablas de vida obtenido con los datos de 2019
+
+## Tabla de vida 2019 total
+
+```{r}
+#Tabla de vida 2019 
+lt2019_t <- lt1 %>%
+  filter(AÑO == 2019) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, Dx, lx, q_x, p_x, ax_gen, Lx, Tx, ex) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    q_x  = round(q_x, digits = 4),
+    p_x  = round(p_x, digits = 4),
+    ax_m = round(ax_gen, digits = 4),
+    ex   = round(ex, digits = 2)
+  )
+
+# Mostrar el resultado limpio
+kable(lt2019_t, 
+      caption = "Tabla de vida 2019 total", 
+      align = "c")
+```
+
+## Tabla de vida 2019 mujer
+
+```{r}
+#Tabla de vida 2019 mujer
+lt2019_h <- lt1 %>%
+  filter(AÑO == 2019) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, MDx, Mlx, qx_m, px_m, ax_m, MLx, MTx, ex_m) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    qx_m  = round(qx_m, digits = 4),
+    px_m  = round(px_m, digits = 4),
+    ax_m = round(ax_m, digits = 4),
+    ex_m   = round(ex_m, digits = 2)
+  )
+# Mostrar el resultado limpio
+kable(lt2019_h, 
+      caption = "Tabla de vida 2019 mujer", 
+      align = "c")
+
+```
+
+## Tabla de vida 2019 hombre
+
+```{r}
+
+#Tabla de vida 2019 mujer
+lt2019_h <- lt1 %>%
+  filter(AÑO == 2019) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, HDx, Hlx, qx_h, px_h, ax_h, HLx, HTx, ex_h) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    qx_h  = round(qx_h, digits = 4),
+    px_h  = round(px_h, digits = 4),
+    ax_h  = round(ax_h, digits = 4),
+    ex_h  = round(ex_h, digits = 2)
+  )
+
+# Mostrar el resultado limpio
+kable(lt2019_h, 
+      caption = "Tabla de vida 2019 hombre", 
+      align = "c")
+```
+
+## Tabla de vida obtenido con los datos de 2021
+
+## Tabla de vida 2021 total
+
+```{r}
+
+#Tabla de vida 2021
+lt2021_t <- lt1 %>%
+  filter(AÑO == 2021) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, Dx, lx, q_x, p_x, ax_gen, Lx, Tx, ex) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    q_x  = round(q_x, digits = 4),
+    p_x  = round(p_x, digits = 4),
+    ax_m = round(ax_gen, digits = 4),
+    ex   = round(ex, digits = 2)
+  )
+# Mostrar el resultado limpio
+kable(lt2021_t, 
+      caption = "Tabla de vida 2021 total", 
+      align = "c")
+```
+
+## Tabla de vida 2021 mujer
+
+```{r}
+#Tabla de vida 2021 mujer
+lt2021_m <- lt1 %>%
+  filter(AÑO == 2021) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, MDx, Mlx, qx_m, px_m, ax_m, MLx, MTx, ex_m) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    qx_m  = round(qx_m, digits = 4),
+    px_m  = round(px_m, digits = 4),
+    ax_m = round(ax_m, digits = 4),
+    ex_m   = round(ex_m, digits = 2)
+  )
+
+# Mostrar el resultado limpio
+kable(lt2021_m, 
+      caption = "Tabla de vida 2021 mujer", 
+      align = "c")
+```
+
+## Tabla de vida 2021 hombre
+
+```{r}
+#Tabla de vida 2019 mujer
+lt2021_h <- lt1 %>%
+  filter(AÑO == 2021) %>%
+  # 1. Seleccionamos las columnas tal y como se llaman originalmente
+  select(x, n, HDx, Hlx, qx_h, px_h, ax_h, HLx, HTx, ex_h) %>%
+  # 2. Modificamos las columnas que necesitan redondeo
+  mutate(
+    qx_h  = round(qx_h, digits = 4),
+    px_h  = round(px_h, digits = 4),
+    ax_h  = round(ax_h, digits = 4),
+    ex_h  = round(ex_h, digits = 2)
+  )
+
+# Mostrar el resultado limpio
+kable(lt2021_h, 
+      caption = "Tabla de vida 2021 mujer", 
+      align = "c")
+ 
 ```
 
 #Tabla con las esperanzas de vida por año y por sexo
@@ -208,11 +531,16 @@ lt2021 <- lt1 %>%
 ```{r}
 #cuadro con las esperanzas de vida
 cuadro_e0 <- lt1[x == 0, .(AÑO, ex_h, ex_m)]
-cuadro_e0
+# Mostrar el resultado limpio
+kable(cuadro_e0, 
+      caption = "Esperanzas de vida al nacer por año y sexo", 
+      align = "c")
 
 ```
 
-### Gráficas
+# Gráficas
+
+## Gráfica de función de superviventes hombre
 
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
@@ -220,6 +548,23 @@ lt1[, AÑO := as.factor(AÑO)] # Nos asegura colores fijos por año
 
 # Paleta básica y limpia de colores
 colores <- c("2010" = "#4682B4", "2019" = "#2E8B57", "2021" = "#CD5C5C")
+## Gráfica de función de superviventes 
+
+#Gráfica de función de superviventes 
+glx <- ggplot(lt1, aes(x = x, y = lx, color = AÑO)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Sobrevivientes por Año",
+       subtitle = "Muestra cuántos siguen vivos de la cohorte inicial",
+       x = "Edad", y = "Número de personas vivas", color = "Año") +
+  theme_minimal()
+glx
+ggsave("grafica_lx.png", plot = glx, width = 7, height = 4.5, dpi = 300)
+
+```
+
+## Gráfica de función de superviventes hombre
+
+```{r}
 gHlx <- ggplot(lt1, aes(x = x, y = Hlx, color = AÑO)) +
   geom_line(linewidth = 1.2) +
   labs(title = "Sobrevivientes Hombres (Hlx) por Año",
@@ -229,7 +574,12 @@ gHlx <- ggplot(lt1, aes(x = x, y = Hlx, color = AÑO)) +
 gHlx
 
 ggsave("grafica_lx_hombres.png", plot = gHlx, width = 7, height = 4.5, dpi = 300)
+```
 
+## Gráfica de función de superviventes mujeres
+
+```{r}
+#Gráfica de función de superviventes mujeres
 gMlx <- ggplot(lt1, aes(x = x, y = Mlx, color = AÑO)) +
   geom_line(linewidth = 1.2) +
   labs(title = "Sobrevivientes Mujeres (Mlx) por Año",
@@ -239,7 +589,27 @@ gMlx <- ggplot(lt1, aes(x = x, y = Mlx, color = AÑO)) +
 gMlx
 ggsave("grafica_lx_Mujeres.png", plot = gMlx, width = 7, height = 4.5, dpi = 300)
 
+```
 
+## Grafica de probabilidad de morir
+
+```{r}
+#grafica de probabilidad de morir 
+gq_x <- ggplot(lt1, aes(x = x, y = log(q_x), color = AÑO)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Probabilidad de morir",
+       subtitle = "escala logarítmica",
+       x = "Edad", y = "q_x", color = "Año") +
+  theme_minimal()
+gq_x
+ggsave("grafica_qx.png", plot = gq_x, width = 7, height = 4.5, dpi = 300)
+```
+
+Podemos observar como mientras más nos acercamos a la actualidad, aumenta la probabilidad de mmuerte
+
+## Grafica de probabilidad de morir de hombres
+
+```{r}
 #grafica de probabilidad de morir de hombre
 gqx_h <- ggplot(lt1, aes(x = x, y = log(qx_h), color = AÑO)) +
   geom_line(linewidth = 1.2) +
@@ -249,8 +619,13 @@ gqx_h <- ggplot(lt1, aes(x = x, y = log(qx_h), color = AÑO)) +
   theme_minimal()
 gqx_h
 ggsave("grafica_qx_h.png", plot = gqx_h, width = 7, height = 4.5, dpi = 300)
+```
 
+En edades jóvenes podemos observar un comportamiento parecido, sin embargo vuelve a predominar la mortalidad de 2021
 
+## Grafica de probabilidad de morir de mujeres
+
+```{r}
 #grafica de probabilidad de morir de mujeres
 gqx_m <- ggplot(lt1, aes(x = x, y = log(qx_m), color = AÑO)) +
   geom_line(linewidth = 1.2) +
@@ -263,6 +638,246 @@ ggsave("grafica_qx_m.png", plot = gqx_m, width = 7, height = 4.5, dpi = 300)
 
 ```
 
-# Análisis
+Podemos obervar un comportamiento parecido a los hombres
+
+## Grafica de las esperanzas de vida
+
+```{r}
+#grafica de esperanzas de vida
+gex <- ggplot(lt1, aes(x = x, y = ex, color = AÑO)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Esperanzas de vida",
+       x = "Edad", y = "ex", color = "Año") +
+  theme_minimal()
+gex
+ggsave("grafica_ex.png", plot = gex, width = 7, height = 4.5, dpi = 300)
+```
+
+Podemos observar que las esperanzas de vida siguen la misma tendencia, pero siendo desplazadas, siendo la menor la de 2021 debido a la pandemia.
+
+## Grafica de esperanzas de vida de hombres
+
+```{r}
+#grafica de esperanzas de vida de hombres
+gex_h <- ggplot(lt1, aes(x = x, y = ex_h, color = AÑO)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Esperanzas de vida hombres",
+       x = "Edad", y = "ex_h", color = "Año") +
+  theme_minimal()
+gex_h
+ggsave("grafica_ex_h.png", plot = gex_h, width = 7, height = 4.5, dpi = 300)
+```
+
+## Grafica de esperanzas de vida de mujeres
+
+```{r}
+#grafica de esperanzas de vida de mujeres
+gex_m <- ggplot(lt1, aes(x = x, y = ex_m, color = AÑO)) +
+  geom_line(linewidth = 1.2) +
+  labs(title = "Esperanzas de vida mujeres",
+       x = "Edad", y = "ex_m", color = "Año") +
+  theme_minimal()
+gex_m
+ggsave("grafica_ex_m.png", plot = gex_h, width = 7, height = 4.5, dpi = 300)
+
+```
+
+Tanto hombres como mujeres siguen la misma tendencia general en las esperanzas de vida
+
+```{r}
+# 1. Convertimos tus datos a formato largo para que ggplot diferencie hombres/mujeres
+datos_grafico <- cuadro_e0 %>%
+  pivot_longer(
+    cols = c(ex_h, ex_m), 
+    names_to = "Sexo", 
+    values_to = "Esperanza"
+  ) %>%
+  # Limpiamos las etiquetas para que se vean profesionales en la leyenda
+  mutate(Sexo = ifelse(Sexo == "ex_h", "Hombres", "Mujeres"))
+
+# 2. Creamos la gráfica de barras agrupadas
+grafica_e0 <- ggplot(datos_grafico, aes(x = as.factor(AÑO), y = Esperanza, fill = Sexo)) +
+  # 'dodge' coloca las barras una al lado de la otra
+  geom_col(position = position_dodge(width = 0.8), width = 0.7, color = "black", linewidth = 0.2) +
+  
+  # Añadimos las etiquetas con los valores arriba de cada barra redondeados a 1 decimal
+  geom_text(
+    aes(label = round(Esperanza, 1)), 
+    position = position_dodge(width = 0.8), 
+    vjust = -0.5, 
+    size = 3.5, 
+    fontface = "bold"
+  ) +
+  
+  # Paleta de colores elegante y profesional (Azul acero y Rosa mexicano suave)
+  scale_fill_manual(values = c("Hombres" = "#4682B4", "Mujeres" = "#E066A6")) +
+  
+  # Límites del eje Y para darle aire a las etiquetas superiores
+  scale_y_continuous(limits = c(0, 95), expand = c(0, 0)) +
+  
+  # Títulos del gráfico según tus datos demográficos
+  labs(
+    title = "Evolución de la Esperanza de Vida al Nacer (e0)",
+    subtitle = "Comparativa por año de estudio según sexo",
+    x = "Año de Análisis",
+    y = "Años de Vida Esperados",
+    fill = "Sexo"
+  ) +
+  
+  # Un diseño limpio e institucional
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    panel.grid.major.x = element_blank(), # Quita líneas verticales molestas
+    legend.position = "bottom"            # Pone la leyenda abajo para dar espacio
+  )
+
+# 3. Mostrar la gráfica en tu reporte de Quarto/PDF
+grafica_e0
+
+# 4. Guardar la imagen por si la necesitas de respaldo
+ggsave("grafica_esperanza_vida.png", plot = grafica_e0, width = 7, height = 4.5, dpi = 300)
+
+```
+
+# Tasas de fecundidad
+
+Sea:
+
+-   $l_x$: función de sobrevivencia (proporción de mujeres que sobreviven hasta edad $x$)
+-   $f_x$: tasa específica de fecundidad a la edad $x$
+-   $\alpha, \beta$: edades límite del periodo reproductivo
+
+## Tasa Global de Fecundidad (TGF)
+
+$$ TGF = \sum_{x=\alpha}^{\beta} f_x $$
+
+## Tasa Bruta de Reproducción (GRR)
+
+$$ GRR = \sum_{x=\alpha}^{\beta} f_x^F $$
+
+donde:
+
+$$ f_x^F = \frac{f_x}{1 + SRB} $$
+
+y $SRB$ es la razón de sexos al nacer.
+
+#### Tasa Neta de Reproducción (NRR)
+
+La **Tasa Neta de Reproducción (NRR)** considera los efectos de la mortalidad:
+
+$$ NRR = \sum_{x=\alpha}^{\beta} l_x f_x^F $$
+
+$$ NRR = \left( \sum_{x=\alpha}^{\beta} l_x f_x \right) \cdot \frac{1}{1 + SRB} $$ $=$ $$ NRR = p(A)\cdot GRR $$
+
+donde:
+
+$$ p(A) = \text{probabilidad de sobrevivir al periodo} $$
+
+```{r}
+B2010 <- fread("C:/Users/angel/OneDrive/Escritorio/2026-2/Demografia/Nueva carpeta/Entrega 1/Data/Nacimienos_2010.csv")
+
+A <- lt1 %>%
+  inner_join(B2010, by = "x") %>%
+  filter(AÑO == 2010) %>%
+  select(x, lx, Mlx, Total, Hombre, Mujer,MLx) 
+  
+
+B2019 <- fread("C:/Users/angel/OneDrive/Escritorio/2026-2/Demografia/Nueva carpeta/Entrega 1/Data/Nacimientos_2019.csv")
+
+B <- lt1 %>%
+  inner_join(B2019, by = "x") %>%
+  filter(AÑO == 2019) %>%
+  select(x, lx, Mlx, Total, Hombre, Mujer,MLx) 
+
+A
+B
+
+indicadores_2010 <- A %>%
+  as.data.frame() %>%
+  mutate(
+    AÑO = 2010,
+    # TEF quinquenal anualizada: Nacimientos / Años-persona vividos (MLx)
+    TEF = Total / MLx,
+    
+    # TEF Femenina quinquenal anualizada: Nacimientos de niñas / MLx
+    TEF_femenina = Mujer / MLx,
+    
+    supervivencia_grupo = MLx / 8561) #l_0
+
+
+indicadores_2019 <- B %>%
+ as.data.frame() %>%
+  mutate(
+    AÑO = 2019,
+    # TEF quinquenal anualizada: Nacimientos / Años-persona vividos (MLx)
+    TEF = Total / MLx,
+    
+    # TEF Femenina quinquenal anualizada: Nacimientos de niñas / MLx
+    TEF_femenina = Mujer / MLx,
+    supervivencia_grupo = MLx / 7509) #l_0
+    
+
+
+base_reproduccion_total <- bind_rows(indicadores_2010, indicadores_2019)
+
+cuadro_reproduccion_final <- base_reproduccion_total %>%
+  group_by(AÑO) %>%
+  summarise(
+    TGF = sum(TEF, na.rm = TRUE) * 5,
+    TGR = sum(TEF_femenina, na.rm = TRUE) * 5,
+    TNR = sum(TEF_femenina * supervivencia_grupo),
+    .groups = "drop"
+  )
+
+cuadro_reproduccion_final %>%
+  mutate(across(c(TGF, TGR, TNR), \(v) round(v, 3))) %>%
+  kable(
+    caption = "Indicadores resumen de Fecundidad, Reproducción y Reemplazo Neto",
+    col.names = c("Año", "Tasa Global de Fecundidad (TGF)", "Tasa Global de Reproducción (TGR)", "Tasa Neta de Reproducción (TNR)"),
+    align = "c"
+  )
+
+
+GTEF <- base_reproduccion_total %>%
+  mutate(
+    TEF_por_mil = TEF * 1000,
+    AÑO = as.factor(AÑO),
+    Grupo_Edad = paste0(x, "-", x + 4)
+  )
+
+# 2. CREACIÓN DE LA GRÁFICA (La guardamos en el objeto 'mi_grafica')
+mi_grafica <- ggplot(GTEF, aes(x = Grupo_Edad, y = TEF_por_mil, group = AÑO, color = AÑO)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("2010" = "#2c3e50", "2019" = "#e74c3c")) +
+  labs(
+    title = "Curva Estructural de la Fecundidad (2010 vs 2019)",
+    subtitle = "Tasas Específicas de Fecundidad (TEF) por cada 1,000 mujeres",
+    x = "Grupo de Edad Quinquenal",
+    y = "Hijos nacidos por cada 1,000 mujeres al año",
+    color = "Año de Estudio"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, margin = margin(b = 10)),
+    plot.subtitle = element_text(hjust = 0.5, color = "gray40", margin = margin(b = 20)),
+    legend.position = "bottom",
+    panel.grid.minor = element_blank(),
+    axis.text.x = element_text(face = "bold")
+  )
+
+# 3. MOSTRAR LA GRÁFICA EN CONSOLA/QUARTO
+# Solo escribes el nombre del objeto para que R la dibuje
+mi_grafica
+
+# 4. GUARDAR LA IMAGEN CORRECTAMENTE
+# Ahora sí, en 'plot' pasamos el objeto de la gráfica, NO la tabla de datos
+ggsave("Grafica_de_TEF.png", plot = mi_grafica, width = 7, height = 4.5, dpi = 300)
+```
+
+# Conclusión
 
 Al comparar los años 2010, 2019 y 2021 se puede observar cómo cambió la mortalidad en Campeche antes y durante la pandemia. El año 2010 sirve como un punto de partida, mientras que 2019 permite ver la situación antes de la COVID-19. Por otro lado, 2021 es importante porque refleja el impacto que tuvo la pandemia en la mortalidad. En general, si entre 2010 y 2019 la esperanza de vida aumenta, esto puede interpretarse como una mejora en las condiciones de supervivencia de la población. Es decir, la población de Campeche habría tenido mejores condiciones de salud o menor riesgo de morir en ciertos grupos de edad. Sin embargo, al llegar a 2021, este comportamiento puede cambiar debido al aumento de defunciones provocado por la COVID-19. Una de las partes más importantes del análisis es comparar 2019 con 2021, porque 2019 representa un año “normal” antes de la pandemia, mientras que 2021 muestra un año afectado por un evento sanitario fuerte. Si en 2021 aumenta la probabilidad de morir qx, o disminuye la esperanza de vida e x, se puede decir que la pandemia tuvo un efecto importante en la mortalidad del estado. También hay que considerar algunas características de Campeche. Es un estado con población relativamente pequeña y con baja densidad poblacional, por lo que algunas personas pueden vivir lejos de los principales servicios de salud. Esto puede influir en la atención médica y en el comportamiento de la mortalidad. Además, Campeche ha tenido un proceso de envejecimiento gradual, lo cual también puede aumentar la mortalidad, ya que las personas adultas mayores tienen mayor riesgo de morir. Por sexo, normalmente las mujeres tienen mayor esperanza de vida que los hombres. Entonces, si en los resultados se observa que e x, de las mujeres es mayor que el de los hombres, esto coincide con el comportamiento esperado. En cambio, si en 2021 la esperanza de vida de los hombres baja más, podría interpretarse como una mayor afectación masculina durante la pandemia. En conclusión, los resultados muestran que la mortalidad en Campeche no debe analizarse solo con los indicadores y datos, sino también tomando en cuenta el contexto. Entre 2010 y 2019 se puede observar la evolución normal de la mortalidad, pero en 2021 aparece el efecto de la COVID-19. Por eso, los cambios más importantes de ese año pueden estar relacionados con la pandemia, el envejecimiento de la población y las condiciones particulares del estado
+
+# Tablas de causa eliminada
